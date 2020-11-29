@@ -12,6 +12,7 @@ hypernet_layers = 2
 hypernet_embed = 64
 
 w = 0.5
+double_q = True
 hysteretic_qmix = True
 
 
