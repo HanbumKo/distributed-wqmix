@@ -51,4 +51,4 @@ class ReplayBuffer:
                      avail_u=self.avail_u_buf[idxs],
                      avail_u2=self.avail_u2_buf[idxs],
                      u_onehot=self.u_onehot_buf[idxs])
-        return {k: torch.as_tensor(v, dtype=torch.float32) for k,v in batch.items()}
+        return {k: torch.as_tensor(v, device=torch.device(config.device)) for k,v in batch.items()}

@@ -1,6 +1,7 @@
 
 use_wandb = True
 use_tensorboard = False
+device = 'cuda'
 
 map_name = "6h_vs_8z"
 
@@ -11,7 +12,7 @@ epsilon_anneal_time = 100000
 buffer_size = 5000
 target_update_interval = 200 # update the target network every {} episodes
 train_num = 1000000
-test_interval = 4
+test_interval = 5
 mixing_embed_dim = 32
 hypernet_layers = 2
 hypernet_embed = 64
@@ -33,7 +34,7 @@ rnn_hidden_dim = 64 # Size of hidden state for default rnn agent
 
 
 # Ray
-n_cpus = 50
+n_cpus = 40
 
 
 

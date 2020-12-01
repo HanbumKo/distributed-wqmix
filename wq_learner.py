@@ -4,14 +4,15 @@ torch.set_num_threads(64)
 import numpy as np
 
 from model import RNNAgent, QMixer
+from copy import deepcopy
 
 
 class WQLearner():
     def __init__(self):
-        self.rnnagent = RNNAgent()
-        self.rnnagent_targ = RNNAgent()
-        self.mixer = QMixer()
-        self.mixer_targ = QMixer()
+        self.rnnagent = RNNAgent().to(config.device)
+        self.rnnagent_targ = RNNAgent().to(config.device)
+        self.mixer = QMixer().to(config.device)
+        self.mixer_targ = QMixer().to(config.device)
 
         self.rnnagent_targ.load_state_dict(self.rnnagent.state_dict())
         self.mixer_targ.load_state_dict(self.mixer.state_dict())
@@ -22,14 +23,14 @@ class WQLearner():
         self.train_step = 0
     
     def get_rnnagent_state_dict(self):
-        return self.rnnagent.state_dict()
+        return deepcopy(self.rnnagent).cpu().state_dict()
 
     def learn(self, batch):
         max_episode_len = self.get_max_episode_len(batch)
         episode_num = batch['o'].shape[0]
-        self.rnn_hidden = torch.zeros((episode_num, config.n_agents, config.rnn_hidden_dim))
-        self.rnn_targ_hidden = torch.zeros((episode_num, config.n_agents, config.rnn_hidden_dim))
-        batch['u'] = torch.tensor(batch['u'], dtype=torch.long)
+        self.rnn_hidden = torch.zeros((episode_num, config.n_agents, config.rnn_hidden_dim)).to(config.device)
+        self.rnn_targ_hidden = torch.zeros((episode_num, config.n_agents, config.rnn_hidden_dim)).to(config.device)
+        batch['u'] = torch.tensor(batch['u'], dtype=torch.long).to(config.device)
 
         s, s2, u, r, avail_u, avail_u2, d = batch['s'], batch['s2'], batch['u'], \
                                             batch['r'],  batch['avail_u'], batch['avail_u2'],\

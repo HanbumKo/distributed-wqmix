@@ -46,8 +46,8 @@ for i in range(config.train_num):
     batch = buf.sample_batch(batch_size=config.batch_size)
 
     train_results = []
-    # for _ in range(config.n_cpus):
-    for _ in range(1):
+    for _ in range(config.n_cpus):
+    # for _ in range(1):
         train_results.append(learner.learn(batch))
 
     episode_rewards = [worker_result["episode_reward"] for worker_result in worker_results]
