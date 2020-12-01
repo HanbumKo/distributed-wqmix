@@ -1,24 +1,28 @@
 
-map_name = "8m"
+use_wandb = True
+use_tensorboard = False
+
+map_name = "6h_vs_8z"
 
 epsilon_start = 1.0
 epsilon_finish = 0.05
+epsilon_anneal_time = 100000
 # epsilon_anneal_time = 50000
-epsilon_anneal_time = 20
 buffer_size = 5000
 target_update_interval = 200 # update the target network every {} episodes
+train_num = 1000000
+test_interval = 4
 mixing_embed_dim = 32
 hypernet_layers = 2
 hypernet_embed = 64
 
+wqmix = True
 w = 0.5
 double_q = True
 hysteretic_qmix = True
 
-
 gamma = 0.99
 batch_size = 32 # Number of episodes to train on
-buffer_size = 32 # Size of the replay buffer
 lr = 0.0005 # Learning rate for agents
 optim_alpha = 0.99 # RMSProp alpha
 optim_eps = 0.00001 # RMSProp epsilon
@@ -26,3 +30,19 @@ grad_norm_clip = 10 # Reduce magnitude of gradients above this L2 norm
 
 
 rnn_hidden_dim = 64 # Size of hidden state for default rnn agent
+
+
+# Ray
+n_cpus = 50
+
+
+
+from smac.env import StarCraft2Env
+env = StarCraft2Env(map_name=map_name)
+env_info = env.get_env_info()
+n_actions = env_info["n_actions"]
+n_agents = env_info["n_agents"]
+state_shape = env_info["state_shape"]
+obs_shape = env_info["obs_shape"]
+input_shape = obs_shape + n_actions
+episode_limit = env_info["episode_limit"]

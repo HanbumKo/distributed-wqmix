@@ -5,7 +5,7 @@ import numpy as np
 from model import RNNAgent, QMixer
 
 
-class WQLearner():
+class QLearner():
     def __init__(self):
         self.rnnagent = RNNAgent()
         self.rnnagent_targ = RNNAgent()
@@ -40,26 +40,54 @@ class WQLearner():
         mask = 1 - batch["pad"][:, :max_episode_len, :].float()
 
         q_values, q_targ_values = self.get_q_values(batch, max_episode_len)
-        q_values = torch.gather(q_values, dim=3, index=u).squeeze(3)
-
+        chosen_action_qvals = torch.gather(q_values, dim=3, index=u).squeeze(3)
         q_targ_values[avail_u2 == 0.0] = -9999999
-        q_targ_values = q_targ_values.max(dim=3)[0]
+        if config.double_q:
+            q_values_detach = q_targ_values.clone().detach()
+            q_values_detach[avail_u == 0] = -9999999
+            cur_max_actions = q_values_detach[:, :].max(dim=3, keepdim=True)[1]
+            
+            q_targ_values_detach = q_targ_values.clone().detach()
+            q_targ_values_detach[avail_u2 == 0] = -9999999
+            next_max_actions = q_targ_values_detach[:, :].max(dim=3, keepdim=True)[1]
+            target_max_qvals = torch.gather(q_targ_values, 3, next_max_actions).squeeze(3)
+        else:
+            assert "only support double q. Change config double q to True"
+            target_max_qvals = q_targ_values.max(dim=3)[0]
 
-        q_total = self.mixer(q_values, s)
-        q_total_targ = self.mixer_targ(q_targ_values, s2)
+        q_total = self.mixer(chosen_action_qvals, s)
+        q_total_targ = self.mixer_targ(target_max_qvals, s2)
 
         targets = r + config.gamma * q_total_targ * (1 - d)
         
         td_error = (q_total - targets.detach())
         masked_td_error = mask * td_error
 
+        # Weighting
+        # w_to_use = config.w
+        # if config.hysteretic_qmix:
+        #     ws = torch.ones_like(td_error) * w_to_use
+        #     ws = torch.where(td_error < 0, torch.ones_like(td_error) * 1, ws)  # Target is greater than current max
+        #     w_to_use = ws.mean().item()
+        # else:
+        #     is_max_action = (u == cur_max_actions).min(dim=2)[0]
+        #     target_max_agent_qvals = torch.gather(q_targ_values, 3, cur_max_actions).squeeze(3)
+        #     max_action_qtot = self.mixer_targ(target_max_agent_qvals[:, :], s)
+        #     qtot_larger = targets > max_action_qtot
+        #     ws = torch.ones_like(td_error) * w_to_use
+        #     ws = torch.where(is_max_action | qtot_larger, torch.ones_like(td_error) * 1, ws)  # Target is greater than current max
+        #     w_to_use = ws.mean().item()
+
+        # Weighted L2 loss, take mean over actual data
         loss = (masked_td_error ** 2).sum() / mask.sum()
+
         self.optim.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.params, config.grad_norm_clip)
         self.optim.step()
 
         if self.train_step > 0 and self.train_step % config.target_update_interval == 0:
+            print("target updated")
             self.rnnagent_targ.load_state_dict(self.rnnagent.state_dict())
             self.mixer_targ.load_state_dict(self.mixer.state_dict())
         

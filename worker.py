@@ -1,11 +1,13 @@
 import config
 import torch
+import ray
 import numpy as np
 
 from smac.env import StarCraft2Env
 from model import RNNAgent, QMixer
 
 
+@ray.remote
 class RolloutWorker():
     def __init__(self):
         self.rnnagent = RNNAgent()
@@ -16,7 +18,7 @@ class RolloutWorker():
     
     def get_epsilon(self):
         returned_eps = self.epsilon
-        self.epsilon = self.epsilon - self.epsilon_deg if self.epsilon > config.epsilon_finish else self.epsilon
+        self.epsilon = self.epsilon - (self.epsilon_deg*config.n_cpus) if self.epsilon > config.epsilon_finish else self.epsilon
         self.epsilon = max(self.epsilon, config.epsilon_finish)
         return returned_eps
 
@@ -117,7 +119,13 @@ class RolloutWorker():
                        avail_u2=avail_u2,
                        u_onehot=u_onehot)
         
-        return episode, episode_reward, win_tag
+        win_tag = 1 if win_tag else 0
+        results = dict(episode_reward=episode_reward,
+                       win_tag=win_tag,
+                       episode_len=step,
+                       epsilon=epsilon)
+        
+        return episode, results
 
     def set_rnnagent_state_dict(self, rnnagent_state_dict):
         self.rnnagent.load_state_dict(rnnagent_state_dict)

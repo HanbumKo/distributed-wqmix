@@ -1,5 +1,6 @@
 import config
 import torch
+torch.set_num_threads(64)
 import numpy as np
 
 from model import RNNAgent, QMixer
@@ -78,8 +79,11 @@ class WQLearner():
             ws = torch.where(is_max_action | qtot_larger, torch.ones_like(td_error) * 1, ws)  # Target is greater than current max
             w_to_use = ws.mean().item()
 
-        # Weighted L2 loss, take mean over actual data
-        loss = (ws.detach() * (masked_td_error ** 2)).sum() / mask.sum()
+        if config.wqmix:
+            # Weighted L2 loss, take mean over actual data
+            loss = (ws.detach() * (masked_td_error ** 2)).sum() / mask.sum()
+        else:
+            loss = (masked_td_error ** 2).sum() / mask.sum()
 
         self.optim.zero_grad()
         loss.backward()
@@ -87,11 +91,18 @@ class WQLearner():
         self.optim.step()
 
         if self.train_step > 0 and self.train_step % config.target_update_interval == 0:
-            print("target updated")
             self.rnnagent_targ.load_state_dict(self.rnnagent.state_dict())
             self.mixer_targ.load_state_dict(self.mixer.state_dict())
+            torch.save(self.rnnagent.state_dict(), "./checkpoint/rnnagent.pth")
+            torch.save(self.mixer.state_dict(), "./checkpoint/mixer.pth")
         
         self.train_step += 1
+
+        results = dict(loss=loss.item(),
+                       train_step=self.train_step,
+                       masked_td_error=masked_td_error.mean().item())
+
+        return results
     
     def get_q_values(self, batch, max_episode_len):
         batch_size = batch['o'].shape[0]
