@@ -25,7 +25,13 @@ class RolloutWorker():
     def choose_action(self, obs, last_action, agent_num, avail_actions, epsilon, evaluate, hidden):
         inputs = obs.copy()
         avail_actions_ind = np.nonzero(avail_actions)[0]  # index of actions which can be choose
+
+        # transform agent_num to onehot vector
+        agent_id = np.zeros(config.n_agents)
+        agent_id[agent_num] = 1.
+
         inputs = np.hstack((inputs, last_action))
+        inputs = np.hstack((inputs, agent_id))
         hidden_state = hidden[:, agent_num, :]
 
         inputs = torch.tensor(inputs, dtype=torch.float32).unsqueeze(0)
@@ -100,7 +106,7 @@ class RolloutWorker():
             obs2 = self.env.get_obs()
             state2 = self.env.get_state()
             o2[step, :, :] = np.array(obs2)
-            s2[step, :] = np.array(state)
+            s2[step, :] = np.array(state2)
             for agent_id in range(config.n_agents):
                 avail_action2 = self.env.get_avail_agent_actions(agent_id)
                 avail_u2[step, agent_id, :] = avail_action2

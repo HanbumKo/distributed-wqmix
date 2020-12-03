@@ -54,7 +54,6 @@ class WQLearner():
             next_max_actions = q_targ_values_detach[:, :].max(dim=3, keepdim=True)[1]
             target_max_qvals = torch.gather(q_targ_values, 3, next_max_actions).squeeze(3)
         else:
-            assert "only support double q. Change config double q to True"
             target_max_qvals = q_targ_values.max(dim=3)[0]
 
         q_total = self.mixer(chosen_action_qvals, s)
@@ -133,6 +132,8 @@ class WQLearner():
         else:
             inputs.append(u_onehot[:, time_step - 1])
         inputs_next.append(u_onehot[:, time_step])
+        inputs.append(torch.eye(config.n_agents).unsqueeze(0).expand(batch_size, -1, -1).to(config.device))
+        inputs_next.append(torch.eye(config.n_agents).unsqueeze(0).expand(batch_size, -1, -1).to(config.device))
         inputs = torch.cat([x.reshape(batch_size * config.n_agents, -1) for x in inputs], dim=1)
         inputs_next = torch.cat([x.reshape(batch_size * config.n_agents, -1) for x in inputs_next], dim=1)
         
