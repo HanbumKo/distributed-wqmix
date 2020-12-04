@@ -37,17 +37,22 @@ for i in range(config.train_num):
         ray.get(worker.set_rnnagent_state_dict.remote(learner.get_rnnagent_state_dict()))
 
     worker_results = []
-    episode_ops = [worker.generate_episode.remote(evaluate=False) for worker in workers]
-    worker_outputs = ray.get(episode_ops)
-    for worker_output in worker_outputs:
-        buf.store_epi(worker_output[0])
-        worker_results.append(worker_output[1])
+    # episode_ops = [worker.generate_episode.remote(evaluate=False) for worker in workers]
+    # worker_outputs = ray.get(episode_ops)
+    # for worker_output in worker_outputs:
+    #     buf.store_epi(worker_output[0])
+    #     worker_results.append(worker_output[1])
+
+     # Store only one episode
+    worker_output = ray.get(workers[0].generate_episode.remote(evaluate=False))
+    buf.store_epi(worker_output[0])
+    worker_results.append(worker_output[1])
 
     batch = buf.sample_batch(batch_size=config.batch_size)
 
     train_results = []
-    for _ in range(config.n_cpus):
-    # for _ in range(1):
+    # for _ in range(config.n_cpus):
+    for _ in range(1):
         train_results.append(learner.learn(batch))
 
     episode_rewards = [worker_result["episode_reward"] for worker_result in worker_results]
@@ -84,7 +89,6 @@ for i in range(config.train_num):
 
     # Evaluate
     if i % config.test_interval == 0:
-
         worker_results = []
         episode_ops = [worker.generate_episode.remote(evaluate=True) for worker in workers]
         worker_outputs = ray.get(episode_ops)

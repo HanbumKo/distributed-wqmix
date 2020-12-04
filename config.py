@@ -3,24 +3,24 @@ use_wandb = True
 use_tensorboard = False
 device = 'cuda:1'
 
-map_name = "8m"
+map_name = "3s5z"
 
 epsilon_start = 1.0
 epsilon_finish = 0.05
-epsilon_anneal_time = 10000
+epsilon_anneal_time = 1000000
 # epsilon_anneal_time = 50000
 buffer_size = 5000
 target_update_interval = 200 # update the target network every {} episodes
 train_num = 1000000
-test_interval = 5
-mixing_embed_dim = 16
+test_interval = 30
+mixing_embed_dim = 32
 hypernet_layers = 2
-hypernet_embed = 32
+hypernet_embed = 64
 
-wqmix = False
-w = 0.5
+wqmix = True
+w = 0.75
 double_q = True
-hysteretic_qmix = True
+hysteretic_qmix = False
 
 gamma = 0.99
 batch_size = 32 # Number of episodes to train on
@@ -30,11 +30,11 @@ optim_eps = 0.00001 # RMSProp epsilon
 grad_norm_clip = 10 # Reduce magnitude of gradients above this L2 norm
 
 
-rnn_hidden_dim = 32 # Size of hidden state for default rnn agent
+rnn_hidden_dim = 64 # Size of hidden state for default rnn agent
 
 
 # Ray
-n_cpus = 40
+n_cpus = 20
 
 
 

@@ -16,13 +16,13 @@ class RolloutWorker():
 
         self.env = StarCraft2Env(map_name=config.map_name)
     
-    def get_epsilon(self):
+    def dec_epsilon(self):
         returned_eps = self.epsilon
         self.epsilon = self.epsilon - (self.epsilon_deg*config.n_cpus) if self.epsilon > config.epsilon_finish else self.epsilon
         self.epsilon = max(self.epsilon, config.epsilon_finish)
         return returned_eps
 
-    def choose_action(self, obs, last_action, agent_num, avail_actions, epsilon, evaluate, hidden):
+    def choose_action(self, obs, last_action, agent_num, avail_actions, evaluate, hidden):
         inputs = obs.copy()
         avail_actions_ind = np.nonzero(avail_actions)[0]  # index of actions which can be choose
 
@@ -41,7 +41,7 @@ class RolloutWorker():
         q_value, hidden[:, agent_num, :] = self.rnnagent(inputs, hidden_state)
 
         q_value[avail_actions == 0.0] = -float("inf")
-        if np.random.uniform() < epsilon and not evaluate:
+        if np.random.uniform() < self.epsilon and not evaluate:
             action = np.random.choice(avail_actions_ind)
         else:
             action = torch.argmax(q_value)
@@ -75,8 +75,6 @@ class RolloutWorker():
         last_action = np.zeros((config.n_agents, config.n_actions))
         hidden = torch.zeros((1, config.n_agents, config.rnn_hidden_dim))
 
-        epsilon = self.get_epsilon()
-
         while not done and step < max_epi_len:
             obs = self.env.get_obs()
             state = self.env.get_state()
@@ -84,7 +82,7 @@ class RolloutWorker():
             for agent_id in range(config.n_agents):
                 avail_action = self.env.get_avail_agent_actions(agent_id)
                 action = self.choose_action(obs[agent_id], last_action[agent_id], agent_id,
-                                            avail_action, epsilon, evaluate, hidden)
+                                            avail_action, evaluate, hidden)
                 action_onehot = np.zeros(config.n_actions)
                 action_onehot[action] = 1
                 actions.append(action)
@@ -112,6 +110,8 @@ class RolloutWorker():
                 avail_u2[step, agent_id, :] = avail_action2
             
             step += 1
+            if not evaluate:
+                self.dec_epsilon()
             
         episode = dict(o=o,
                        u=u,
@@ -129,7 +129,7 @@ class RolloutWorker():
         results = dict(episode_reward=episode_reward,
                        win_tag=win_tag,
                        episode_len=step,
-                       epsilon=epsilon)
+                       epsilon=self.epsilon)
         
         return episode, results
 
