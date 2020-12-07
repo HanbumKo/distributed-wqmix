@@ -1,10 +1,12 @@
 An distributed implementation of Weighted QMIX: Expanding Monotonic Value Function Factorisation with Ray
 
-##### Working on. Just minimal training code for now. will be updated soon (you can run by "python train.py")
+`python train.py`
 
 paper https://arxiv.org/abs/2006.10800
 
 Env https://github.com/oxwhirl/smac
+
+![result1](https://github.com/HanbumKo/distributed-wqmix/blob/master/images/result1.png)
 
 
 
