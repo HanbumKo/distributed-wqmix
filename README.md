@@ -1,4 +1,4 @@
-An distributed implementation of Weighted QMIX: Expanding Monotonic Value Function Factorisation with Ray
+A distributed implementation of Weighted QMIX: Expanding Monotonic Value Function Factorisation with Ray
 
 `python train.py`
 
